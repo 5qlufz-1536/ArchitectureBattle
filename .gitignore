@@ -1,3 +1,18 @@
 # プロジェクトの除外パス
 /.gradle/
 /build/
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+
+# gradle
+build
+.gradle
+
+# other
+eclipse
+run

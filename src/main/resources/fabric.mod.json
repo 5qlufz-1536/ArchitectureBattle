@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "architecturebattle",
+  "version": "${version}",
+  "name": "ArchitectureBattle",
+  "description": "ArchitectureBattle for Fabric 1.21",
+  "authors": [
+    "saluf"
+  ],
+  "contact": {
+    "repo": "https://github.com/5qlufz-1536/architecturebattle"
+  },
+  "license": "MIT",
+  "icon": "assets/architecturebattle/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.saluf.architecturebattle.ArchitectureBattleMod"
+    ]
+  },
+  "mixins": [
+  ],
+  "depends": {
+    "fabricloader": ">=0.12.0",
+    "fabric": "*",
+    "minecraft": "1.21.1"
+  }
+}
