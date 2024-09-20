@@ -106,9 +106,10 @@ public class TimerManager {
             minutesRemaining = secondsRemaining / 60;
             hoursRemaining = minutesRemaining / 60;
             secondsOnly = secondsRemaining % 60;
+            minutesRemaining = minutesRemaining % 60;
 
-            if (remainingTicks > 72000) {
-                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining - 60, secondsOnly)).formatted(Formatting.BOLD));
+            if (hoursRemaining > 0) {
+                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
             }
             else {
                 bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
