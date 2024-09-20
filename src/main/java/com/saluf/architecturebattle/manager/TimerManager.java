@@ -29,9 +29,9 @@ public class TimerManager {
 
         if (bossBar == null) {
             bossBar = new ServerBossBar(
-                    Text.literal("Remaining Time"), // タイトル
-                    BossBar.Color.GREEN,             // 色
-                    BossBar.Style.PROGRESS         // 表示スタイル
+                    Text.literal("Remaining Time"),
+                    BossBar.Color.GREEN,
+                    BossBar.Style.PROGRESS
             );
         }
 
@@ -40,8 +40,7 @@ public class TimerManager {
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             bossBar.addPlayer(player);
-            //RegistryEntry.Reference<SoundEvent> hornSoundEntry = SoundEvents.GOAT_HORN_SOUNDS.get(player.getRandom().nextInt(SoundEvents.GOAT_HORN_SOUNDS.size()));
-            RegistryEntry.Reference<SoundEvent> hornSoundEntry_1 = SoundEvents.GOAT_HORN_SOUNDS.get(0);
+            RegistryEntry.Reference<SoundEvent> hornSoundEntry_1 = SoundEvents.GOAT_HORN_SOUNDS.getFirst();
 
             player.networkHandler.sendPacket(new PlaySoundS2CPacket(
                     hornSoundEntry_1,
@@ -95,6 +94,7 @@ public class TimerManager {
     private static void updateTimer(MinecraftServer server) {
         int secondsRemaining;
         int minutesRemaining;
+        int hoursRemaining;
         int secondsOnly;
         if (timerRunning && remainingTicks > 0) {
             remainingTicks--;
@@ -104,9 +104,15 @@ public class TimerManager {
 
             secondsRemaining = remainingTicks / 20;
             minutesRemaining = secondsRemaining / 60;
+            hoursRemaining = minutesRemaining / 60;
             secondsOnly = secondsRemaining % 60;
 
-            bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
+            if (remainingTicks > 72000) {
+                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining - 60, secondsOnly)).formatted(Formatting.BOLD));
+            }
+            else {
+                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
+            }
 
         } else {
             timerRunning = false;
