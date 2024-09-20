@@ -24,6 +24,10 @@ resume / 再開
 /timer start
 ```
 
+## License / ライセンス
+
+[MIT License](https://github.com/5qlufz-1536/ArchitectureBattle/blob/master/LICENSE)
+
 
 ## SpecialThanks
 
