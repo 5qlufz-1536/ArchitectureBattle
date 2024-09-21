@@ -23,6 +23,10 @@ public class TimerCommand {
                 .then(CommandManager.literal("stop").executes(context -> {
                     TimerManager.stopTimer(context.getSource().getServer());
                     return 1;
+                }))
+                .then(CommandManager.literal("reset").executes(context -> {
+                    TimerManager.resetTimer(context.getSource().getServer());
+                    return 1;
                 })));
     }
 

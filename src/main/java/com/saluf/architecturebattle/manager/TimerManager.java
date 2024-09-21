@@ -91,6 +91,19 @@ public class TimerManager {
         }
     }
 
+    public static void resetTimer(MinecraftServer server) {
+        if (timerRunning) {
+            timerRunning = false;
+            remainingTicks = 0;
+            totalTicks = 0;
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                bossBar.removePlayer(player);
+                player.sendMessage(Text.literal("タイマーがリセットされました。").formatted(Formatting.GRAY), false);
+            }
+            bossBar = null;
+        }
+    }
+
     private static void updateTimer(MinecraftServer server) {
         int secondsRemaining;
         int minutesRemaining;
@@ -117,15 +130,11 @@ public class TimerManager {
 
         } else {
             timerRunning = false;
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                bossBar.removePlayer(player);
-            }
-            bossBar = null;
             remainingTicks = 0;
             totalTicks = 0;
 
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-
+                bossBar.removePlayer(player);
                 RegistryEntry<SoundEvent> soundevent_finish = Registries.SOUND_EVENT.getEntry(SoundEvents.ITEM_TOTEM_USE);
                 player.sendMessage(Text.literal("建築終了！").formatted(Formatting.GOLD), false);
                 player.networkHandler.sendPacket(new PlaySoundS2CPacket(
@@ -134,10 +143,11 @@ public class TimerManager {
                         player.getPos().x,
                         player.getPos().y,
                         player.getPos().z,
-                        0.9F,
+                        0.8F,
                         1.0F,
                         5));
             }
+            bossBar = null;
         }
     }
 
