@@ -24,6 +24,10 @@ resume / 再開
 /timer start
 ```
 
+## 対応バージョン
+
+- Minecraft 1.21 - 1.21.x
+
 ## License / ライセンス
 
 [MIT License](https://github.com/5qlufz-1536/ArchitectureBattle/blob/master/LICENSE)
@@ -32,3 +36,4 @@ resume / 再開
 ## SpecialThanks
 
  - [FabricMC](https://github.com/FabricMC)
+

@@ -1,5 +1,7 @@
 package com.saluf.architecturebattle.manager;
 
+import com.saluf.architecturebattle.util.VersionUtil;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.entity.boss.BossBar;
@@ -35,22 +37,15 @@ public class TimerManager {
             );
         }
 
-        bossBar.setPercent(totalTicks); // タイマーの最大値を設定
-
+        bossBar.setPercent(1.0f);
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             bossBar.addPlayer(player);
-            RegistryEntry.Reference<SoundEvent> hornSoundEntry_1 = SoundEvents.GOAT_HORN_SOUNDS.getFirst();
-
-            player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                    hornSoundEntry_1,
-                    SoundCategory.PLAYERS,
-                    player.getPos().x,
-                    player.getPos().y,
-                    player.getPos().z,
-                    1.0F,
-                    1.0F,
-                    5));
+            if (VersionUtil.isMinecraft1215() || VersionUtil.isMinecraft1216()) {
+                playStartSound(player);
+            } else {
+                playStartSound(player);
+            }
         }
 
         if (!eventRegistered) {
@@ -60,33 +55,69 @@ public class TimerManager {
                     updateTimer(server1);
                 }
             });
+            
+            // サーバーシャットダウン時の処理を登録
+            ServerLifecycleEvents.SERVER_STOPPING.register(server1 -> {
+                try {
+                    cleanupResources();
+                } catch (Exception e) {
+                    System.err.println("タイマーのクリーンアップ中にエラーが発生しました: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private static void playStartSound(ServerPlayerEntity player) {
+        try {
+            RegistryEntry.Reference<SoundEvent> hornSoundEntry_1 = SoundEvents.GOAT_HORN_SOUNDS.getFirst();
+            player.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                    hornSoundEntry_1,
+                    SoundCategory.PLAYERS,
+                    player.getPos().x,
+                    player.getPos().y,
+                    player.getPos().z,
+                    1.0F,
+                    1.0F,
+                    5));
+        } catch (Exception e) {
+            System.err.println("サウンド再生中にエラーが発生しました: " + e.getMessage());
+        }
+    }
+
+    private static void cleanupResources() {
+        if (bossBar != null) {
+            timerRunning = false;
+            totalTicks = 0;
+            remainingTicks = 0;
+            bossBar = null;
         }
     }
 
     public static void stopTimer(MinecraftServer server) {
         if (timerRunning) {
             timerRunning = false;
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                player.sendMessage(Text.literal("タイマーを停止しました。"));
-            }
         }
     }
-
+    
     public static void resumeTimer(MinecraftServer server) {
         if (!timerRunning && remainingTicks > 0) {
             timerRunning = true;
             for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                player.sendMessage(Text.literal("タイマーを再開しました。"));
-                RegistryEntry.Reference<SoundEvent> hornSoundEntry_2 = SoundEvents.GOAT_HORN_SOUNDS.get(2);
-                player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                        hornSoundEntry_2,
-                        SoundCategory.PLAYERS,
-                        player.getPos().x,
-                        player.getPos().y,
-                        player.getPos().z,
-                        1.0F,
-                        1.0F,
-                        5));
+                try {
+                    RegistryEntry.Reference<SoundEvent> hornSoundEntry_2 = SoundEvents.GOAT_HORN_SOUNDS.get(2);
+                    player.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                            hornSoundEntry_2,
+                            SoundCategory.PLAYERS,
+                            player.getPos().x,
+                            player.getPos().y,
+                            player.getPos().z,
+                            1.0F,
+                            1.0F,
+                            5));
+                } catch (Exception e) {
+                    System.err.println("サウンド再生中にエラーが発生しました: " + e.getMessage());
+                }
             }
         }
     }
@@ -96,11 +127,12 @@ public class TimerManager {
             timerRunning = false;
             remainingTicks = 0;
             totalTicks = 0;
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                bossBar.removePlayer(player);
-                player.sendMessage(Text.literal("タイマーがリセットされました。").formatted(Formatting.GRAY), false);
+
+            if (bossBar != null) {
+                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                    bossBar.removePlayer(player);}
+                bossBar = null;
             }
-            bossBar = null;
         }
     }
 
@@ -109,45 +141,56 @@ public class TimerManager {
         int minutesRemaining;
         int hoursRemaining;
         int secondsOnly;
-        if (timerRunning && remainingTicks > 0) {
-            remainingTicks--;
+        try {
+            if (timerRunning && remainingTicks > 0) {
+                remainingTicks--;
 
-            float progress = (float) remainingTicks / totalTicks;
-            bossBar.setPercent(progress);
+                float progress = (float) remainingTicks / totalTicks;
+                bossBar.setPercent(progress);
 
-            secondsRemaining = remainingTicks / 20;
-            minutesRemaining = secondsRemaining / 60;
-            hoursRemaining = minutesRemaining / 60;
-            secondsOnly = secondsRemaining % 60;
-            minutesRemaining = minutesRemaining % 60;
+                secondsRemaining = remainingTicks / 20;
+                minutesRemaining = secondsRemaining / 60;
+                hoursRemaining = minutesRemaining / 60;
+                secondsOnly = secondsRemaining % 60;
+                minutesRemaining = minutesRemaining % 60;
 
-            if (hoursRemaining > 0) {
-                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
+                if (hoursRemaining > 0) {
+                    bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
+                }
+                else {
+                    bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
+                }
+
+            } else {
+                timerRunning = false;
+                remainingTicks = 0;
+                totalTicks = 0;
+
+                if (bossBar != null) {
+                    for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                        try {
+                            bossBar.removePlayer(player);
+                            RegistryEntry<SoundEvent> soundevent_finish = Registries.SOUND_EVENT.getEntry(SoundEvents.ITEM_TOTEM_USE);
+                            // バージョン別の処理でメッセージ送信
+                            server.getPlayerManager().broadcast(Text.literal("建築終了！").formatted(Formatting.GOLD), false);
+                            player.networkHandler.sendPacket(new PlaySoundS2CPacket(
+                                    soundevent_finish,
+                                    SoundCategory.PLAYERS,
+                                    player.getPos().x,
+                                    player.getPos().y,
+                                    player.getPos().z,
+                                    0.8F,
+                                    1.0F,
+                                    5));
+                        } catch (Exception e) {
+                            System.err.println("プレイヤーへの通知中にエラーが発生しました: " + e.getMessage());
+                        }
+                    }
+                }
+                bossBar = null;
             }
-            else {
-                bossBar.setName(Text.literal(String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly)).formatted(Formatting.BOLD));
-            }
-
-        } else {
-            timerRunning = false;
-            remainingTicks = 0;
-            totalTicks = 0;
-
-            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                bossBar.removePlayer(player);
-                RegistryEntry<SoundEvent> soundevent_finish = Registries.SOUND_EVENT.getEntry(SoundEvents.ITEM_TOTEM_USE);
-                player.sendMessage(Text.literal("建築終了！").formatted(Formatting.GOLD), false);
-                player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                        soundevent_finish,
-                        SoundCategory.PLAYERS,
-                        player.getPos().x,
-                        player.getPos().y,
-                        player.getPos().z,
-                        0.8F,
-                        1.0F,
-                        5));
-            }
-            bossBar = null;
+        } catch (Exception e) {
+            System.err.println("タイマー更新中にエラーが発生しました: " + e.getMessage());
         }
     }
 
