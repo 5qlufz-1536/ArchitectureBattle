@@ -21,27 +21,12 @@ dependencies {
     // To change the versions see the gradle.properties file
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
 
-    //implementation('com.google.zxing:javase:3.5.1')
-
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-    //implementation "com.google.zxing:core:3.5.1"
-    //modImplementation('com.google.zxing:core:3.5.0')
-    //modImplementation('com.google.zxing:javase:3.5.0')
 
         // Fabric API. This is technically optional, but you probably want it anyway.
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
-
-/*
-// Shadow JARタスクの追加
-tasks.withType(ShadowJar) {
-    archiveClassifier.set('')
-    configurations = [project.configurations.implementation]
-}
-
- */
 
 processResources {
     inputs.property "version", project.version

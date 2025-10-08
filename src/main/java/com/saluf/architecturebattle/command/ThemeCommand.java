@@ -1,74 +1,115 @@
 package com.saluf.architecturebattle.command;
 
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import java.util.Random;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
-public class ThemeCommand {
+public final class ThemeCommand {
 
-    public static void shuffleAndSelectTheme(MinecraftServer server, String[] themes) {
-        new Thread(() -> {
-            try {
-                Random random = new Random();
-                for (int i = 0; i < 15; i++) { // 0.25秒 x 15 = 3.75秒
-                    String currentTheme = themes[random.nextInt(themes.length)];
+    private static final int SHUFFLE_ITERATIONS = 15;
+    private static final long SHUFFLE_DELAY_MILLIS = 250L;
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
 
-                    RegistryEntry<SoundEvent> soundevent_shuffle = Registries.SOUND_EVENT.getEntry(SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP);
-                    for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                        player.networkHandler.sendPacket(new TitleS2CPacket(Text.literal(currentTheme)));
-                        player.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("お題をシャッフル中...")));
-                        player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                                soundevent_shuffle,
-                                SoundCategory.PLAYERS,
-                                player.getPos().x,
-                                player.getPos().y,
-                                player.getPos().z,
-                                1.0F,
-                                1.0F,
-                                5));
-                    }
-
-                    Thread.sleep(250); // 0.25秒ごとにシャッフル
-                }
-
-                // 最終的に1つのテーマを選択
-                String selectedTheme = themes[random.nextInt(themes.length)];
-
-                RegistryEntry<SoundEvent> soundevent_theme = Registries.SOUND_EVENT.getEntry(SoundEvents.ENTITY_PLAYER_LEVELUP);
-
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                    player.networkHandler.sendPacket(new TitleS2CPacket(Text.literal(selectedTheme)));
-                    player.networkHandler.sendPacket(new SubtitleS2CPacket(Text.literal("- お題 -").formatted(Formatting.GOLD)));
-                    player.networkHandler.sendPacket(new PlaySoundS2CPacket(
-                            soundevent_theme,
-                            SoundCategory.PLAYERS,
-                            player.getPos().x,
-                            player.getPos().y,
-                            player.getPos().z,
-                            1.0F,
-                            1.0F,
-                            5));
-                }
-                Thread.sleep(250); // 0.25秒ごとにシャッフル
-                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-                    player.sendMessage(Text.literal("§aお題: §f" + selectedTheme));
-                }
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
+    private ThemeCommand() {
     }
 
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(CommandManager.literal("theme")
+                .then(CommandManager.argument("themes", StringArgumentType.greedyString())
+                        .executes(context -> {
+                            String rawInput = StringArgumentType.getString(context, "themes").trim();
+                            if (rawInput.isEmpty()) {
+                                context.getSource().sendError(Text.literal("テーマを1つ以上入力してください。"));
+                                return 0;
+                            }
+
+                            String[] themes = WHITESPACE.split(rawInput);
+                            if (themes.length == 0) {
+                                context.getSource().sendError(Text.literal("テーマを1つ以上入力してください。"));
+                                return 0;
+                            }
+
+                            shuffleAndSelectTheme(context.getSource().getServer(), Arrays.asList(themes));
+                            return themes.length;
+                        })));
+    }
+
+    private static void shuffleAndSelectTheme(MinecraftServer server, List<String> themes) {
+        if (themes.size() == 1) {
+            announceSelection(server, themes.getFirst());
+            return;
+        }
+
+        CompletableFuture.runAsync(() -> runShuffle(server, themes));
+    }
+
+    private static void runShuffle(MinecraftServer server, List<String> themes) {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int i = 0; i < SHUFFLE_ITERATIONS; i++) {
+            String currentTheme = themes.get(random.nextInt(themes.size()));
+            server.execute(() -> broadcastShuffle(server, currentTheme));
+            sleepQuietly();
+        }
+
+        String selectedTheme = themes.get(random.nextInt(themes.size()));
+        server.execute(() -> announceSelection(server, selectedTheme));
+    }
+
+    private static void broadcastShuffle(MinecraftServer server, String theme) {
+        broadcastToPlayers(server, player -> {
+            sendTitle(player, Text.literal(theme), Text.literal("お題をシャッフル中...").formatted(Formatting.GRAY));
+            playSound(player, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP);
+        });
+    }
+
+    private static void announceSelection(MinecraftServer server, String theme) {
+        Text subtitle = Text.literal("- お題 -").formatted(Formatting.GOLD);
+        Text chatMessage = Text.literal("お題: ").formatted(Formatting.GREEN)
+                .append(Text.literal(theme).formatted(Formatting.WHITE));
+
+        broadcastToPlayers(server, player -> {
+            sendTitle(player, Text.literal(theme).formatted(Formatting.WHITE), subtitle);
+            playSound(player, SoundEvents.ENTITY_PLAYER_LEVELUP);
+            player.sendMessage(chatMessage, false);
+        });
+    }
+
+    private static void broadcastToPlayers(MinecraftServer server, Consumer<ServerPlayerEntity> consumer) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            consumer.accept(player);
+        }
+    }
+
+    private static void sendTitle(ServerPlayerEntity player, Text title, Text subtitle) {
+        player.networkHandler.sendPacket(new TitleS2CPacket(title));
+        player.networkHandler.sendPacket(new SubtitleS2CPacket(subtitle));
+    }
+
+    private static void playSound(ServerPlayerEntity player, SoundEvent soundEvent) {
+        player.playSound(soundEvent, 1.0F, 1.0F);
+    }
+
+    private static void sleepQuietly() {
+        try {
+            Thread.sleep(SHUFFLE_DELAY_MILLIS);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }
