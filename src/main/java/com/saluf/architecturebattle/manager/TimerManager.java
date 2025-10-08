@@ -18,6 +18,8 @@ import net.minecraft.world.event.GameEvent;
 
 import java.util.function.Consumer;
 
+import com.saluf.architecturebattle.util.SoundHelper;
+
 public class TimerManager {
 
     private static final int TICKS_PER_SECOND = 20;
@@ -135,7 +137,7 @@ public class TimerManager {
 
         sendChat(server, Text.literal("建築終了！").formatted(Formatting.GOLD));
         broadcast(server, player -> {
-            player.playSound(SoundEvents.ITEM_TOTEM_USE, 1.0F, 1.0F);
+            SoundHelper.play(player, SoundEvents.ITEM_TOTEM_USE, SoundCategory.PLAYERS, 1.0F, 1.0F);
             if (bossBar != null) {
                 bossBar.removePlayer(player);
             }
@@ -172,11 +174,10 @@ public class TimerManager {
     }
 
     private void playGoatHorn(ServerPlayerEntity player) {
-    ServerWorld world = player.getServerWorld();
-    SoundEvent soundEvent = goatHornSound();
-    player.playSound(soundEvent, 4.0F, 1.0F);
-    world.playSound(null, player.getX(), player.getY(), player.getZ(), soundEvent, SoundCategory.RECORDS, 4.0F, 1.0F);
-    world.emitGameEvent(GameEvent.INSTRUMENT_PLAY, player.getPos(), GameEvent.Emitter.of(player));
+        ServerWorld world = player.getServerWorld();
+        SoundEvent soundEvent = goatHornSound();
+        SoundHelper.play(player, soundEvent, SoundCategory.RECORDS, 4.0F, 1.0F);
+        world.emitGameEvent(GameEvent.INSTRUMENT_PLAY, player.getPos(), GameEvent.Emitter.of(player));
     }
 
     private SoundEvent goatHornSound() {

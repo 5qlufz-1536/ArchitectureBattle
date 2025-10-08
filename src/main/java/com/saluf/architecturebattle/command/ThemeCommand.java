@@ -6,11 +6,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
 import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -21,6 +19,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+
+import com.saluf.architecturebattle.util.SoundHelper;
 
 public final class ThemeCommand {
 
@@ -76,7 +76,7 @@ public final class ThemeCommand {
     private static void broadcastShuffle(MinecraftServer server, String theme) {
         broadcastToPlayers(server, player -> {
             sendTitle(player, Text.literal(theme), Text.literal("お題をシャッフル中...").formatted(Formatting.GRAY));
-            playSound(player, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP);
+            SoundHelper.play(player, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.PLAYERS, 1.0F, 1.0F);
         });
     }
 
@@ -87,7 +87,7 @@ public final class ThemeCommand {
 
         broadcastToPlayers(server, player -> {
             sendTitle(player, Text.literal(theme).formatted(Formatting.WHITE), subtitle);
-            playSound(player, SoundEvents.ENTITY_PLAYER_LEVELUP);
+            SoundHelper.play(player, SoundEvents.ENTITY_PLAYER_LEVELUP, SoundCategory.PLAYERS, 1.0F, 1.0F);
             player.sendMessage(chatMessage, false);
         });
     }
@@ -101,16 +101,6 @@ public final class ThemeCommand {
     private static void sendTitle(ServerPlayerEntity player, Text title, Text subtitle) {
         player.networkHandler.sendPacket(new TitleS2CPacket(title));
         player.networkHandler.sendPacket(new SubtitleS2CPacket(subtitle));
-    }
-
-    private static void playSound(ServerPlayerEntity player, SoundEvent soundEvent) {
-        playSound(player, soundEvent, SoundCategory.PLAYERS, 1.0F, 1.0F);
-    }
-
-    private static void playSound(ServerPlayerEntity player, SoundEvent soundEvent, SoundCategory category, float volume, float pitch) {
-        ServerWorld world = player.getServerWorld();
-        player.playSound(soundEvent, volume, pitch);
-        world.playSound(null, player.getX(), player.getY(), player.getZ(), soundEvent, category, volume, pitch);
     }
 
     private static void sleepQuietly() {
