@@ -6,8 +6,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.network.packet.s2c.play.SubtitleS2CPacket;
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
@@ -102,7 +104,13 @@ public final class ThemeCommand {
     }
 
     private static void playSound(ServerPlayerEntity player, SoundEvent soundEvent) {
-        player.playSound(soundEvent, 1.0F, 1.0F);
+        playSound(player, soundEvent, SoundCategory.PLAYERS, 1.0F, 1.0F);
+    }
+
+    private static void playSound(ServerPlayerEntity player, SoundEvent soundEvent, SoundCategory category, float volume, float pitch) {
+        ServerWorld world = player.getServerWorld();
+        player.playSound(soundEvent, volume, pitch);
+        world.playSound(null, player.getX(), player.getY(), player.getZ(), soundEvent, category, volume, pitch);
     }
 
     private static void sleepQuietly() {

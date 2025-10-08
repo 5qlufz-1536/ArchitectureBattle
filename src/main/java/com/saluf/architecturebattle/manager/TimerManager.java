@@ -7,11 +7,14 @@ import net.minecraft.entity.boss.ServerBossBar;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.event.GameEvent;
 
 import java.util.function.Consumer;
 
@@ -19,7 +22,7 @@ public class TimerManager {
 
     private static final int TICKS_PER_SECOND = 20;
     private static final Identifier GOAT_HORN_PLAY_ID = Identifier.of("minecraft", "item.goat_horn.play");
-    private static final Identifier[] GOAT_HORN_FALLBACK_IDS = {
+    private static final Identifier[] GOAT_HORN_SOUND_IDS = {
         Identifier.of("minecraft", "item.goat_horn.sound.0"),
         Identifier.of("minecraft", "item.goat_horn.sound.1"),
         Identifier.of("minecraft", "item.goat_horn.sound.2"),
@@ -27,7 +30,8 @@ public class TimerManager {
         Identifier.of("minecraft", "item.goat_horn.sound.4"),
         Identifier.of("minecraft", "item.goat_horn.sound.5"),
         Identifier.of("minecraft", "item.goat_horn.sound.6"),
-        Identifier.of("minecraft", "item.goat_horn.sound.7")
+        Identifier.of("minecraft", "item.goat_horn.sound.7"),
+        GOAT_HORN_PLAY_ID
     };
 
     private ServerBossBar bossBar;
@@ -73,7 +77,7 @@ public class TimerManager {
         updateBossBarLabel();
         broadcast(server, player -> {
             bossBar.addPlayer(player);
-            playSound(player, goatHornSound());
+            playGoatHorn(player);
         });
     }
 
@@ -91,7 +95,7 @@ public class TimerManager {
         }
         timerRunning = true;
         sendChat(server, Text.literal("タイマーを再開しました。"));
-        broadcast(server, player -> playSound(player, goatHornSound()));
+        broadcast(server, this::playGoatHorn);
     }
 
     public void resetTimer(MinecraftServer server) {
@@ -131,7 +135,7 @@ public class TimerManager {
 
         sendChat(server, Text.literal("建築終了！").formatted(Formatting.GOLD));
         broadcast(server, player -> {
-            playSound(player, SoundEvents.ITEM_TOTEM_USE);
+            player.playSound(SoundEvents.ITEM_TOTEM_USE, 1.0F, 1.0F);
             if (bossBar != null) {
                 bossBar.removePlayer(player);
             }
@@ -167,8 +171,12 @@ public class TimerManager {
         }
     }
 
-    private void playSound(ServerPlayerEntity player, SoundEvent soundEvent) {
-        player.playSound(soundEvent, 1.0F, 1.0F);
+    private void playGoatHorn(ServerPlayerEntity player) {
+    ServerWorld world = player.getServerWorld();
+    SoundEvent soundEvent = goatHornSound();
+    player.playSound(soundEvent, 4.0F, 1.0F);
+    world.playSound(null, player.getX(), player.getY(), player.getZ(), soundEvent, SoundCategory.RECORDS, 4.0F, 1.0F);
+    world.emitGameEvent(GameEvent.INSTRUMENT_PLAY, player.getPos(), GameEvent.Emitter.of(player));
     }
 
     private SoundEvent goatHornSound() {
@@ -176,13 +184,7 @@ public class TimerManager {
             return cachedGoatHornSound;
         }
 
-        SoundEvent direct = Registries.SOUND_EVENT.getOrEmpty(GOAT_HORN_PLAY_ID).orElse(null);
-        if (direct != null) {
-            cachedGoatHornSound = direct;
-            return cachedGoatHornSound;
-        }
-
-        for (Identifier id : GOAT_HORN_FALLBACK_IDS) {
+        for (Identifier id : GOAT_HORN_SOUND_IDS) {
             SoundEvent fallback = Registries.SOUND_EVENT.getOrEmpty(id).orElse(null);
             if (fallback != null) {
                 cachedGoatHornSound = fallback;
