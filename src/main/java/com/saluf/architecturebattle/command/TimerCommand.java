@@ -18,19 +18,22 @@ public final class TimerCommand {
                         .executes(context -> {
                             int minutes = IntegerArgumentType.getInteger(context, "minutes");
                             timerManager.startTimer(context.getSource().getServer(), minutes);
-                            context.getSource().sendMessage(Text.literal("タイマーを" + minutes + "分に設定して開始しました。"));
+                            context.getSource().sendMessage(Text.translatable("architecturebattle.command.timer.set_and_started", minutes));
                             return 1;
                         }))
                 .then(CommandManager.literal("start").executes(context -> {
                     timerManager.resumeTimer(context.getSource().getServer());
+                    context.getSource().sendMessage(Text.translatable("architecturebattle.command.timer.resumed"));
                     return 1;
                 }))
                 .then(CommandManager.literal("stop").executes(context -> {
                     timerManager.stopTimer(context.getSource().getServer());
+                    context.getSource().sendMessage(Text.translatable("architecturebattle.command.timer.stopped"));
                     return 1;
                 }))
                 .then(CommandManager.literal("reset").executes(context -> {
                     timerManager.resetTimer(context.getSource().getServer());
+                    context.getSource().sendMessage(Text.translatable("architecturebattle.command.timer.reset"));
                     return 1;
                 })));
     }

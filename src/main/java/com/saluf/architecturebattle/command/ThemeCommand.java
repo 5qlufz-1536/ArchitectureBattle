@@ -37,13 +37,13 @@ public final class ThemeCommand {
                         .executes(context -> {
                             String rawInput = StringArgumentType.getString(context, "themes").trim();
                             if (rawInput.isEmpty()) {
-                                context.getSource().sendError(Text.literal("テーマを1つ以上入力してください。"));
+                                context.getSource().sendError(Text.translatable("architecturebattle.command.theme.error.no_themes"));
                                 return 0;
                             }
 
                             String[] themes = WHITESPACE.split(rawInput);
                             if (themes.length == 0) {
-                                context.getSource().sendError(Text.literal("テーマを1つ以上入力してください。"));
+                                context.getSource().sendError(Text.translatable("architecturebattle.command.theme.error.no_themes"));
                                 return 0;
                             }
 
@@ -75,15 +75,17 @@ public final class ThemeCommand {
 
     private static void broadcastShuffle(MinecraftServer server, String theme) {
         broadcastToPlayers(server, player -> {
-            sendTitle(player, Text.literal(theme), Text.literal("お題をシャッフル中...").formatted(Formatting.GRAY));
+            sendTitle(player, Text.literal(theme), Text.translatable("architecturebattle.command.theme.shuffle_subtitle").formatted(Formatting.GRAY));
             SoundHelper.play(player, SoundEvents.BLOCK_BUBBLE_COLUMN_BUBBLE_POP, SoundCategory.PLAYERS, 1.0F, 1.0F);
         });
     }
 
     private static void announceSelection(MinecraftServer server, String theme) {
-        Text subtitle = Text.literal("- お題 -").formatted(Formatting.GOLD);
-        Text chatMessage = Text.literal("お題: ").formatted(Formatting.GREEN)
-                .append(Text.literal(theme).formatted(Formatting.WHITE));
+        Text subtitle = Text.translatable("architecturebattle.command.theme.title_label").formatted(Formatting.GOLD);
+        Text chatMessage = Text.translatable(
+                "architecturebattle.command.theme.chat_message",
+                Text.literal(theme).formatted(Formatting.WHITE)
+        ).formatted(Formatting.GREEN);
 
         broadcastToPlayers(server, player -> {
             sendTitle(player, Text.literal(theme).formatted(Formatting.WHITE), subtitle);

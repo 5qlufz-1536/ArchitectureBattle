@@ -88,7 +88,6 @@ public class TimerManager {
             return;
         }
         timerRunning = false;
-        sendChat(server, Text.literal("タイマーを停止しました。"));
     }
 
     public void resumeTimer(MinecraftServer server) {
@@ -96,7 +95,6 @@ public class TimerManager {
             return;
         }
         timerRunning = true;
-        sendChat(server, Text.literal("タイマーを再開しました。"));
         broadcast(server, this::playGoatHorn);
     }
 
@@ -109,7 +107,6 @@ public class TimerManager {
         totalTicks = 0;
         broadcast(server, player -> {
             bossBar.removePlayer(player);
-            player.sendMessage(Text.literal("タイマーがリセットされました。").formatted(Formatting.GRAY), false);
         });
         bossBar = null;
     }
@@ -135,9 +132,9 @@ public class TimerManager {
         remainingTicks = 0;
         totalTicks = 0;
 
-        sendChat(server, Text.literal("建築終了！").formatted(Formatting.GOLD));
+    sendChat(server, Text.translatable("architecturebattle.command.timer.finished").formatted(Formatting.GOLD));
         broadcast(server, player -> {
-            SoundHelper.play(player, SoundEvents.ITEM_TOTEM_USE, SoundCategory.PLAYERS, 1.0F, 1.0F);
+            SoundHelper.play(player, SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), SoundCategory.PLAYERS, 0.5F, 1.0F);
             if (bossBar != null) {
                 bossBar.removePlayer(player);
             }
@@ -156,10 +153,12 @@ public class TimerManager {
         int secondsOnly = secondsRemaining % 60;
         minutesRemaining %= 60;
 
-        String label = hoursRemaining > 0
-                ? String.format("残り時間: %02d:%02d:%02d", hoursRemaining, minutesRemaining, secondsOnly)
-                : String.format("残り時間: %02d:%02d", minutesRemaining, secondsOnly);
-
+        String label;
+        if (hoursRemaining > 0) {
+            label = Text.translatable("architecturebattle.command.timer.remaining_time_hms", hoursRemaining, String.format("%02d", minutesRemaining), String.format("%02d", secondsOnly)).getString();
+        } else {
+            label = Text.translatable("architecturebattle.command.timer.remaining_time_ms", String.format("%02d", minutesRemaining), String.format("%02d", secondsOnly)).getString();
+        }
         bossBar.setName(Text.literal(label).formatted(Formatting.BOLD));
     }
 

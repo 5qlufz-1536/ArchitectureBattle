@@ -1,0 +1,13 @@
+{
+  "architecturebattle.command.theme.error.no_themes": "Please enter at least one theme.",
+  "architecturebattle.command.theme.shuffle_subtitle": "Shuffling themes...",
+  "architecturebattle.command.theme.title_label": "- Theme -",
+  "architecturebattle.command.theme.chat_message": "Theme: %s",
+  "architecturebattle.command.timer.set_and_started": "Timer set to %s minute(s) and started.",
+  "architecturebattle.command.timer.resumed": "Timer resumed.",
+  "architecturebattle.command.timer.stopped": "Timer stopped.",
+  "architecturebattle.command.timer.reset": "Timer reset.",
+  "architecturebattle.command.timer.finished": "Build finished!",
+  "architecturebattle.command.timer.remaining_time_hms": "Remaining: %02d:%02d:%02d",
+  "architecturebattle.command.timer.remaining_time_ms": "Remaining: %02d:%02d"
+}
