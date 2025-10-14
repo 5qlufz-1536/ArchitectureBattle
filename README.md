@@ -4,6 +4,8 @@ Minecraft JE Server & Client Side Fabric Mod
 
 建築練習等に役立つと嬉しいです⛏
 
+[Modrinth](https://modrinth.com/mod/architecturebattle)
+
 ## Usage/使い方
 
 ### theme command / テーマコマンド
